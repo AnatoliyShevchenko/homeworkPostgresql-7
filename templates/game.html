@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+</head>
+<body>
+    <h1 style="color: red;">{{message}}</h1>
+    <form action="/shop/{{result[0][0]}}" method="post">
+    {% for i in result %}
+    <h3>{{i[1]}}</h3>
+    <h3>{{i[2]}}</h3>
+    <h3>{{i[3]}}</h3>
+    <h3>{{i[4]}}</h3>
+    <h3>{{i[5]}}</h3>
+    {% endfor %}
+    <input type="submit" name="buy" id="buy" value="buy">
+    </form>
+    <a href="/shop"><button>Return</button></a>
+</body>
+</html>

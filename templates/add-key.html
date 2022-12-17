@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add-key</title>
+</head>
+<body>
+    <form action="/admin/add-key" method="post">
+        {% for i in data %}
+        <div>
+            <input type="checkbox" id="game" name="game" value="{{i[0]}}">{{i[1]}}
+        </div>
+        {% endfor %}
+        <input type="text" name="key" id="key" placeholder="key">
+        <input type="submit" name="add" id="add" value="Add">
+    </form>
+    <h3>{{ message }}</h3>
+    <!-- {% for i in result %}
+    <div style="border: 2px solid grey;
+                display: flex;
+                flex-direction: row;">
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Id: {{i[0]}}</h4></div>
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Title: {{i[1]}}</h4></div>
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Description: {{i[2]}}</h4></div>
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Genre: {{i[3]}}</h4></div>
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Genre description: {{i[4]}}</h4></div>
+        <div style="border: 2px solid black;
+                    flex-grow: 1;"><h4>Price: {{i[5]}}</h4></div>            
+    </div>
+    {% endfor %} -->
+</body>
+</html>
