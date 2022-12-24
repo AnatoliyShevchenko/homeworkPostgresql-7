@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Cabinet</title>
+</head>
+<body>
+    <a href="/shop"><button>to shop</button></a>
+    <h2>Личные данные</h2>
+    <h3>Логин: {{p_data[0]}}</h3>
+    <h3>Имя: {{p_data[1]}}</h3>
+    <h3>Фамилия: {{p_data[2]}}</h3>
+    <h3>Кошелек: {{p_data[3]}} рубля или тенге или доллара.</h3>
+    <h3>Электронная почта: {{p_data[4]}}</h3>
+    <br>
+    <h2>Мои игры</h2>
+    {% for i in g_data %}
+    <h3>{{i[1]}}</h3>
+    {% endfor %}
+    <br>
+    <form action="" method="post">
+        <h2>Пополнить кошелек</h2>
+        {{message}}
+        <input type="number" id="money" name="money">
+        <input type="submit" name="add_money" id="add_money" value="add">
+    </form>
+    <br>
+    <a href="/personal-cab/{{id}}/friends"><Button>Друзья</Button></a>
+</body>
+</html>

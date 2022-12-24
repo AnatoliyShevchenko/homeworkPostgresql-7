@@ -7,6 +7,7 @@
     <title>Shop</title>
 </head>
 <body>
+    <a href="/personal-cab/{{user_id}}"><button>Личный кабинет</button></a>
     {% for i in data %}
     <a href="/shop/{{i[0]}}"><h3>{{i[1]}}</h3></a>
     {% endfor %}

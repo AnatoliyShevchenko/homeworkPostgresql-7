@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="" method="post">
+        <input type="text" name="add_friend" id="add_friend" placeholder="input login">
+        <input type="submit" name="search" id="search" value="search">
+    </form>
+    <h2>{{message}}</h2>
+    {% if search %}
+    <h3>Электронная почта: {{search[0]}}</h3>
+    <h3>Логин: {{search[1]}}</h3>
+    <h3>Имя: {{search[2]}}</h3>
+    <h3>Фамилия: {{search[3]}}</h3>
+    {% endif %}
+</body>
+</html>
