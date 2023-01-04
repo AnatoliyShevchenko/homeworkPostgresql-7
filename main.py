@@ -5,24 +5,30 @@ from flask import (
     redirect,
     )
 from werkzeug.security import check_password_hash
+from flask_login import LoginManager, login_user, current_user, login_required
+from userlogin import UserLogin
 from services import Connecting
+import os
 
 
 app = Flask(__name__)
+app.secret_key = os.urandom(50)
 conn: Connecting = Connecting()
+login_manager = LoginManager(app)
 
 conn.connect_db()
 conn.create_tables()
-conn.create_superuser('genitalgrinder90@gmail.com' ,'Brick92', 'root', 'Brick', '92')
+conn.create_superuser('genitalgrinder90@gmail.com' ,'Brick92', 'root')
 
-user_id = ''
 admin_id = ''
 
+@login_manager.user_loader
+def load_user(id):
+    print('load_user')
+    return UserLogin().fromDB(id)
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
-    global user_id
-    message = ''
     if request.method == 'POST':
         login = request.form.get('login')
         password = request.form.get('password')
@@ -34,7 +40,10 @@ def main():
             message = 'Неправильный пароль'
             return render_template('autorization.html', message=message)
         elif login == data[0][2] and check_password_hash(data[0][3], password) == True:
-            user_id = data[0][0]
+            userlogin = UserLogin().create(data[0])
+            login_user(userlogin)
+            user_id = current_user.get_id()
+            print(f'Пользователь: {user_id}')
             return redirect('/shop')
     return render_template('autorization.html')
 
@@ -43,38 +52,32 @@ def reg():
     message = ''
     if request.method == 'POST':
         email = request.form.get('email')
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
         login = request.form.get('login')
         password = request.form.get('password')
-        check_password = request.form.get('check_password')
         data = conn.check_user(login)
         mail_data = conn.check_user_mail(email)
-        if password != check_password:
-            message = 'ПАРОЛИ НЕ СОВПАДАЮТ'
-            return render_template('registration.html', message=message)
-        elif data:
+        if data:
             message = 'ЛОГИН ЗАНЯТ'
             return render_template('registration.html', message=message)
         elif mail_data:
             message = 'Данный адрес уже зарегистрирован'
             return render_template('registration.html', message=message)
-        elif not data and not mail_data and password == check_password:
-            conn.registration(email, login, password, first_name, last_name)
+        elif not data and not mail_data and password:
+            conn.registration(email, login, password)
             return redirect('/')
     return render_template('registration.html')
 
 @app.route('/shop')
+@login_required
 def search():
-    global user_id
     data = conn.get_games()
-    return render_template('shop.html', data=data, user_id=user_id)
+    return render_template('shop.html', data=data)
 
 @app.route('/shop/<int:id>', methods=['GET', 'POST'])
+@login_required
 def get_game(id):
-    global user_id
-    if not user_id:
-        return redirect('/')
+    user_id = current_user.get_id()
+    print(f'Пользователь: {user_id}')
     message = ''
     data = conn.list_result()
     basket_data = conn.check_add_in_basket(id)
@@ -99,10 +102,8 @@ def get_game(id):
     return render_template('game.html', result=result)
 
 @app.route('/shop/basket', methods=['GET', 'POST'])
+@login_required
 def basket():
-    global user_id
-    if not user_id:
-        return redirect('/')
     message = ''
     summ = 0
     data = conn.check_basket()
@@ -112,7 +113,7 @@ def basket():
             price: float = conn.get_price(i)
             summ += price[0]
         print(summ)
-        user_money = conn.check_money(user_id)
+        user_money = conn.check_money(current_user.get_id())
         if user_money[0] < summ:
             message = 'У вас недостаточно средств'
             return render_template('basket.html', data=data, message=message)
@@ -120,42 +121,40 @@ def basket():
         for j in games:
             key = conn.get_key(j)
             conn.key_send(key[0])
-            conn.add_game_to_user(user_id, j, key[0])
-        conn.buy(summ, user_id)
+            conn.add_game_to_user(current_user.get_id(), j, key[0])
+        conn.buy(summ, current_user.get_id())
         return render_template('basket.html', data=data, message=message)
     return render_template('basket.html', data=data, message=message)
 
-@app.route('/personal-cab/<int:id>', methods=['GET','POST'])
+@app.route('/personal-cab/<string:id>', methods=['GET','POST'])
+@login_required
 def personal_cab(id):
-    global user_id
-    if not user_id:
-        return redirect('/')
+    id = current_user.get_id()
     message = ''
     personal_data = conn.get_user(id)
     games_data = conn.get_user_games(id)
     if request.method == 'POST':
         money = request.form.get('money')
         if int(money) > 0:
-            conn.art_money(user_id, money)
+            conn.art_money(id, money)
             message = 'success'
-            return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message, id=user_id)
-    return render_template('user-cab.html', p_data=personal_data, g_data=games_data, id=user_id)
+            return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message)
+    return render_template('user-cab.html', p_data=personal_data, g_data=games_data)
 
 @app.route('/personal-cab/<int:id>/friends', methods=['GET', 'POST'])
+@login_required
 def friends(id):
-    global user_id
-    if not user_id:
-        return redirect('/')
+    id = current_user.get_id()
     message = ''
     if request.method == 'POST':
         add_friend = request.form.get('add_friend')
         search = conn.search_friend(add_friend)
         if search:
             message = 'Найден пользователь'
-            return render_template('friends.html', id=user_id, message=message, search=search)
+            return render_template('friends.html', message=message, search=search)
         message = 'Пользователь не найден'
-        return render_template('friends.html', id=user_id, message=message, search=search)
-    return render_template('friends.html', id=user_id)
+        return render_template('friends.html', message=message, search=search)
+    return render_template('friends.html')
     
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -169,7 +168,7 @@ def admin():
         if not data:
             message = 'Ты не админ, Вали отсюда'
             return render_template('admin.html', message=message)
-        elif login == data[0][1] and hash == False:
+        elif login == data[0][2] and hash == False:
             message = 'Неправильный пароль'
             return render_template('admin.html', message=message)
         elif login == data[0][2] and hash == True:
@@ -243,9 +242,10 @@ def add_game():
         title = request.form.get('title')
         description = request.form.get('description')
         price = request.form.get('price')
+        year = request.form.get('year')
         genres = request.form.getlist('genre')
         if title and description and genres and title not in games_data:
-            conn.set_game(title, description, price)
+            conn.set_game(title, description, year, price)
             message = 'Game added!'
             game = conn.get_game_id(title)
             game_id = game[0][0]

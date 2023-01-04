@@ -51,6 +51,7 @@ class Connecting():
                     id SERIAL PRIMARY KEY,
                     title VARCHAR(30) UNIQUE NOT NULL,
                     description TEXT NOT NULL,
+                    year_of_issue INTEGER NOT NULL,
                     price DOUBLE PRECISION DEFAULT(60)
                 );
                 CREATE TABLE IF NOT EXISTS genres(
@@ -68,8 +69,6 @@ class Connecting():
                     email VARCHAR(60) UNIQUE NOT NULL,
                     login VARCHAR(32) UNIQUE NOT NULL,
                     password VARCHAR(200) NOT NULL,
-                    first_name VARCHAR(32) NOT NULL,
-                    last_name VARCHAR(32) NOT NULL,
                     wallet DOUBLE PRECISION DEFAULT(0),
                     date_reg DATE DEFAULT(now())
                 );
@@ -84,8 +83,6 @@ class Connecting():
                     email VARCHAR(60) UNIQUE NOT NULL,
                     login VARCHAR(32) UNIQUE NOT NULL,
                     password VARCHAR(200) NOT NULL,
-                    first_name VARCHAR(32) NOT NULL,
-                    last_name VARCHAR(32) NOT NULL,
                     date_reg DATE DEFAULT(now())
                 );
                 CREATE TABLE IF NOT EXISTS user_games(
@@ -103,13 +100,13 @@ class Connecting():
         self.connection.commit()
         print('Tables successfuly created!')
 
-    def create_superuser(self, email, login, password, first_name, last_name):
+    def create_superuser(self, email, login, password):
         try:
             hash_password = generate_password_hash(password)
             with self.connection.cursor() as cursor:
                 cursor.execute(f"""
-                    INSERT INTO admin(email, login, password, first_name, last_name)
-                    VALUES ('{email}', '{login}', '{hash_password}', '{first_name}', '{last_name}');
+                    INSERT INTO admin(email, login, password)
+                    VALUES ('{email}', '{login}', '{hash_password}');
                 """)
                 self.connection.commit()
                 print('Superuser created')
@@ -127,12 +124,12 @@ class Connecting():
         print(data)
         return data
 
-    def registration(self, email, login, password, first_name, last_name):
+    def registration(self, email, login, password):
         hash_password = generate_password_hash(password)
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                INSERT INTO users(email, login, password, first_name, last_name)
-                VALUES ('{email}','{login}', '{hash_password}', '{first_name}', '{last_name}');
+                INSERT INTO users(email, login, password)
+                VALUES ('{email}','{login}', '{hash_password}');
             """)
         self.connection.commit()
         print('Registration success!')
@@ -141,7 +138,7 @@ class Connecting():
         data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT * FROM users WHERE login='{login}';
+                SELECT id, email, login, password, wallet FROM users WHERE login='{login}';
             """)
             data = cursor.fetchall()
         self.connection.commit()
@@ -163,7 +160,7 @@ class Connecting():
         data = ()
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT login, first_name, last_name, wallet, email FROM users WHERE id={id};
+                SELECT id FROM users WHERE id={id};
             """)
             data = cursor.fetchone()
         self.connection.commit()
@@ -228,11 +225,11 @@ class Connecting():
         self.connection.commit()
         return data
 
-    def set_game(self, title, description, price):
+    def set_game(self, title, description, year, price):
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                INSERT INTO games(title, description, price)
-                VALUES ('{title}', '{description}', {price});
+                INSERT INTO games(title, description, year_of_issue, price)
+                VALUES ('{title}', '{description}', {year}, {price});
             """)
         self.connection.commit()
         print('Game added!')
@@ -288,7 +285,7 @@ class Connecting():
         data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute("""
-                SELECT games.id, games.title, games.description, genres.title, genres.description, games.price FROM result
+                SELECT games.id, games.title, games.description, genres.title, genres.description, games.year_of_issue, games.price FROM result
                 INNER JOIN games ON result.game_id = games.id
                 INNER JOIN genres ON result.genre_id = genres.id;
             """)
