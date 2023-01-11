@@ -20,7 +20,6 @@ conn.connect_db()
 conn.create_tables()
 conn.create_superuser('genitalgrinder90@gmail.com' ,'Brick92', 'root')
 
-admin_id = ''
 
 @login_manager.user_loader
 def load_user(id):
@@ -43,7 +42,11 @@ def main():
             userlogin = UserLogin().create(data[0])
             login_user(userlogin)
             user_id = current_user.get_id()
-            print(f'Пользователь: {user_id}')
+            token = conn.generate_token()
+            conn.autorization(user_id, token)
+            is_admin = conn.check_admin(login)
+            if is_admin:
+                return redirect('/admin/ok')
             return redirect('/shop')
     return render_template('autorization.html')
 
@@ -68,32 +71,30 @@ def reg():
     return render_template('registration.html')
 
 @app.route('/shop')
-@login_required
+# @login_required
 def search():
     data = conn.get_games()
     return render_template('shop.html', data=data)
 
-@app.route('/shop/<int:id>', methods=['GET', 'POST'])
-@login_required
-def get_game(id):
-    user_id = current_user.get_id()
-    print(f'Пользователь: {user_id}')
+@app.route('/shop/<int:game_id>', methods=['GET', 'POST'])
+# @login_required
+def get_game(game_id):
     message = ''
     data = conn.list_result()
-    basket_data = conn.check_add_in_basket(id)
+    basket_data = conn.check_add_in_basket(game_id)
     result: list[tuple] = []
     for i in data:
-        if i[0] == int(id):
+        if i[0] == int(game_id):
             price = i[5]
             result.append(i)
     if request.method == 'POST':
-        data = conn.check_buy(id)
+        data = conn.check_buy(game_id)
         if not data:
             message = 'извините ключей не осталось'
             return render_template('game.html', result=result, message=message)
         elif data:
             if not basket_data:
-                conn.add_to_basket(user_id, id)
+                conn.add_to_basket(user_id, game_id)
                 message = 'добавлено в корзину'
                 return render_template('game.html', result=result, message=message)
             else:
@@ -102,7 +103,7 @@ def get_game(id):
     return render_template('game.html', result=result)
 
 @app.route('/shop/basket', methods=['GET', 'POST'])
-@login_required
+# @login_required
 def basket():
     message = ''
     summ = 0
@@ -113,7 +114,7 @@ def basket():
             price: float = conn.get_price(i)
             summ += price[0]
         print(summ)
-        user_money = conn.check_money(current_user.get_id())
+        user_money = conn.check_money(user_id())
         if user_money[0] < summ:
             message = 'У вас недостаточно средств'
             return render_template('basket.html', data=data, message=message)
@@ -121,30 +122,30 @@ def basket():
         for j in games:
             key = conn.get_key(j)
             conn.key_send(key[0])
-            conn.add_game_to_user(current_user.get_id(), j, key[0])
-        conn.buy(summ, current_user.get_id())
+            conn.add_game_to_user(user_id(), j, key[0])
+        conn.buy(summ, user_id())
         return render_template('basket.html', data=data, message=message)
     return render_template('basket.html', data=data, message=message)
 
-@app.route('/personal-cab/<string:id>', methods=['GET','POST'])
-@login_required
-def personal_cab(id):
-    id = current_user.get_id()
+@app.route('/personal-cab/<int:user_id>', methods=['GET','POST'])
+# @login_required
+def personal_cab(user_id):
+    id = user_id
     message = ''
-    personal_data = conn.get_user(id)
-    games_data = conn.get_user_games(id)
+    personal_data = conn.get_user(user_id)
+    games_data = conn.get_user_games(user_id)
     if request.method == 'POST':
         money = request.form.get('money')
         if int(money) > 0:
-            conn.art_money(id, money)
+            conn.art_money(user_id, money)
             message = 'success'
             return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message)
     return render_template('user-cab.html', p_data=personal_data, g_data=games_data)
 
 @app.route('/personal-cab/<int:id>/friends', methods=['GET', 'POST'])
-@login_required
+# @login_required
 def friends(id):
-    id = current_user.get_id()
+    id = user_id
     message = ''
     if request.method == 'POST':
         add_friend = request.form.get('add_friend')
@@ -158,7 +159,6 @@ def friends(id):
     
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
-    global admin_id
     message = ''
     if request.method == 'POST':
         login = request.form.get('login')
@@ -172,22 +172,15 @@ def admin():
             message = 'Неправильный пароль'
             return render_template('admin.html', message=message)
         elif login == data[0][2] and hash == True:
-            admin_id = data[0][0]
             return redirect('/admin/ok')
     return render_template('admin.html')
 
 @app.route('/admin/ok')
 def admin_ok():
-    global admin_id
-    if not admin_id:
-        return redirect('/admin')
     return ('<h2><a href="/admin/ok/set-genres">Добавьте жанры</a></h2><h2><a href="/admin/ok/add-game">Добавьте игры</h2><h2><a href="/admin/ok/add-key">Добавить ключи</a></h2>')
 
 @app.route('/admin/ok/set-genres', methods=['GET', 'POST'])
 def add_genre():
-    global admin_id
-    if not admin_id:
-        return redirect('/admin')
     message = ''
     data = conn.get_genres()
     if request.method == 'POST':
@@ -204,9 +197,6 @@ def add_genre():
 
 @app.route('/admin/ok/add-key', methods=['GET', 'POST'])
 def add_key():
-    global admin_id
-    if not admin_id:
-        return redirect('/admin')
     message = ''
     result = conn.list_result()
     data = conn.get_games()
@@ -231,9 +221,6 @@ def add_key():
 
 @app.route('/admin/ok/add-game', methods=['GET', 'POST'])
 def add_game():
-    global admin_id
-    if not admin_id:
-        return redirect('/admin')
     message = ''
     genre_data = conn.get_genres()
     games_data = conn.get_games()

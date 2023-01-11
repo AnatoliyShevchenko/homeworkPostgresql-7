@@ -24,4 +24,4 @@ class UserLogin():
         return False
 
     def get_id(self):
-        return str(self.__user[0])
+        return (self.__user[0])

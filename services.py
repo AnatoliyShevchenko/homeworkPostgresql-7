@@ -3,6 +3,7 @@ from psycopg2.extensions import (cursor as Cursor, connection as Connection, ISO
 from psycopg2 import Error
 from werkzeug.security import generate_password_hash
 from typing import Any
+import os
 
 from config import (USER, PASSWORD, HOST, PORT)
 
@@ -70,20 +71,15 @@ class Connecting():
                     login VARCHAR(32) UNIQUE NOT NULL,
                     password VARCHAR(200) NOT NULL,
                     wallet DOUBLE PRECISION DEFAULT(0),
-                    date_reg DATE DEFAULT(now())
+                    date_reg DATE DEFAULT(now()),
+                    is_admin BOOL DEFAULT(False),
+                    is_manager BOOL DEFAULT(False)
                 );
                 CREATE TABLE IF NOT EXISTS codes(
                     id SERIAL PRIMARY KEY,
                     game_id INTEGER REFERENCES games(id),
                     key VARCHAR(25) NOT NULL UNIQUE,
                     is_active BOOL DEFAULT(True)
-                );
-                CREATE TABLE IF NOT EXISTS admin(
-                    id SERIAL PRIMARY KEY,
-                    email VARCHAR(60) UNIQUE NOT NULL,
-                    login VARCHAR(32) UNIQUE NOT NULL,
-                    password VARCHAR(200) NOT NULL,
-                    date_reg DATE DEFAULT(now())
                 );
                 CREATE TABLE IF NOT EXISTS user_games(
                     id SERIAL PRIMARY KEY,
@@ -96,17 +92,47 @@ class Connecting():
                     user_id INTEGER REFERENCES users(id),
                     game_id INTEGER REFERENCES games(id)
                 );
+                CREATE TABLE IF NOT EXISTS autorization(
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    token text UNIQUE NOT NULL
+                );
             """)
         self.connection.commit()
         print('Tables successfuly created!')
+
+    def generate_token(self):
+        token = os.urandom(512).hex()
+        print(len(token))
+        return token
+
+    def autorization(self, user_id, token):
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""
+                INSERT INTO autorization(user_id, token)
+                VALUES ({user_id}, '{token}');
+            """)
+        self.connection.commit()
+        print('Авторизация выполнена')
+
+    def check_token(self, token):
+        data: list[tuple] = []
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT * FROM autorization WHERE token='{token}';
+            """)
+            data = cursor.fetchone()
+        self.connection.commit()
+        print(data)
+        return data
 
     def create_superuser(self, email, login, password):
         try:
             hash_password = generate_password_hash(password)
             with self.connection.cursor() as cursor:
                 cursor.execute(f"""
-                    INSERT INTO admin(email, login, password)
-                    VALUES ('{email}', '{login}', '{hash_password}');
+                    INSERT INTO users(email, login, password, is_admin, is_manager)
+                    VALUES ('{email}', '{login}', '{hash_password}', True, True);
                 """)
                 self.connection.commit()
                 print('Superuser created')
@@ -117,7 +143,7 @@ class Connecting():
         data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT * FROM admin WHERE login='{login}';
+                SELECT * FROM users WHERE login='{login}' AND is_admin=True;
             """)
             data = cursor.fetchall()
         self.connection.commit()
