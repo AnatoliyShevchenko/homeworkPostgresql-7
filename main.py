@@ -157,29 +157,11 @@ def friends(id):
         return render_template('friends.html', message=message, search=search)
     return render_template('friends.html')
     
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    message = ''
-    if request.method == 'POST':
-        login = request.form.get('login')
-        password = request.form.get('password')
-        data = conn.check_admin(login)
-        hash = check_password_hash(data[0][3], password)
-        if not data:
-            message = 'Ты не админ, Вали отсюда'
-            return render_template('admin.html', message=message)
-        elif login == data[0][2] and hash == False:
-            message = 'Неправильный пароль'
-            return render_template('admin.html', message=message)
-        elif login == data[0][2] and hash == True:
-            return redirect('/admin/ok')
-    return render_template('admin.html')
-
-@app.route('/admin/ok')
+@app.route('/admin')
 def admin_ok():
-    return ('<h2><a href="/admin/ok/set-genres">Добавьте жанры</a></h2><h2><a href="/admin/ok/add-game">Добавьте игры</h2><h2><a href="/admin/ok/add-key">Добавить ключи</a></h2>')
+    return ('<h2><a href="/admin/set-genres">Добавьте жанры</a></h2><h2><a href="/admin/add-game">Добавьте игры</h2><h2><a href="/admin/add-key">Добавить ключи</a></h2>')
 
-@app.route('/admin/ok/set-genres', methods=['GET', 'POST'])
+@app.route('/admin/set-genres', methods=['GET', 'POST'])
 def add_genre():
     message = ''
     data = conn.get_genres()
@@ -195,7 +177,7 @@ def add_genre():
     
     return render_template('set-genres.html', data=data)
 
-@app.route('/admin/ok/add-key', methods=['GET', 'POST'])
+@app.route('/admin/add-key', methods=['GET', 'POST'])
 def add_key():
     message = ''
     result = conn.list_result()
@@ -219,7 +201,7 @@ def add_key():
             return render_template('add-key.html', result=result, message=message, data=data)
     return render_template('add-key.html', result=result, message=message, data=data)
 
-@app.route('/admin/ok/add-game', methods=['GET', 'POST'])
+@app.route('/admin/add-game', methods=['GET', 'POST'])
 def add_game():
     message = ''
     genre_data = conn.get_genres()
