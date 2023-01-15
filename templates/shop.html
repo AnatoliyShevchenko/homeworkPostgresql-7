@@ -7,9 +7,18 @@
     <title>Shop</title>
 </head>
 <body>
-    <a href="/personal-cab/{{user_id}}"><button>Личный кабинет</button></a>
+    {% with message = get_flashed_messages() %}
+    <a href="/personal-cab/{{message[0]}}"><button>Личный кабинет</button></a>
+    {% endwith %}
+    <form action="/shop" method="post">
+        {% with messages = get_flashed_messages() %}
+        <input type="password" name="user_id" id="user_id" value="{{messages[0]}}" readonly hidden>
+        <input type="password" name="token" id="token" value="{{messages[1]}}" readonly hidden>
+        {% endwith %}
+    </form>
     {% for i in data %}
     <a href="/shop/{{i[0]}}"><h3>{{i[1]}}</h3></a>
     {% endfor %}
+    <script src="{{url_for('static', filename='/js/autorization.js')}}"></script>
 </body>
 </html>

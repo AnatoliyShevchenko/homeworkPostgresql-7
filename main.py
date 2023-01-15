@@ -3,6 +3,7 @@ from flask import (
     render_template, 
     request, 
     redirect,
+    flash
     )
 from werkzeug.security import check_password_hash
 from flask_login import LoginManager, login_user, current_user, login_required
@@ -46,7 +47,11 @@ def main():
             conn.autorization(user_id, token)
             is_admin = conn.check_admin(login)
             if is_admin:
-                return redirect('/admin/ok')
+                flash(user_id)
+                flash(token)
+                return redirect('/admin')
+            flash(user_id)
+            flash(token)
             return redirect('/shop')
     return render_template('autorization.html')
 
@@ -71,13 +76,11 @@ def reg():
     return render_template('registration.html')
 
 @app.route('/shop')
-# @login_required
 def search():
     data = conn.get_games()
     return render_template('shop.html', data=data)
 
 @app.route('/shop/<int:game_id>', methods=['GET', 'POST'])
-# @login_required
 def get_game(game_id):
     message = ''
     data = conn.list_result()
@@ -88,6 +91,7 @@ def get_game(game_id):
             price = i[5]
             result.append(i)
     if request.method == 'POST':
+        user_id = request.form.get('user_id')
         data = conn.check_buy(game_id)
         if not data:
             message = 'извините ключей не осталось'
@@ -103,18 +107,18 @@ def get_game(game_id):
     return render_template('game.html', result=result)
 
 @app.route('/shop/basket', methods=['GET', 'POST'])
-# @login_required
 def basket():
     message = ''
     summ = 0
     data = conn.check_basket()
     if request.method == 'POST':
+        user_id = request.form.get('user_id')
         games = request.form.getlist('id_game')
         for i in games:
             price: float = conn.get_price(i)
             summ += price[0]
         print(summ)
-        user_money = conn.check_money(user_id())
+        user_money = conn.check_money(user_id)
         if user_money[0] < summ:
             message = 'У вас недостаточно средств'
             return render_template('basket.html', data=data, message=message)
@@ -122,15 +126,13 @@ def basket():
         for j in games:
             key = conn.get_key(j)
             conn.key_send(key[0])
-            conn.add_game_to_user(user_id(), j, key[0])
-        conn.buy(summ, user_id())
+            conn.add_game_to_user(user_id, j, key[1])
+        conn.buy(summ, user_id)
         return render_template('basket.html', data=data, message=message)
     return render_template('basket.html', data=data, message=message)
 
 @app.route('/personal-cab/<int:user_id>', methods=['GET','POST'])
-# @login_required
 def personal_cab(user_id):
-    id = user_id
     message = ''
     personal_data = conn.get_user(user_id)
     games_data = conn.get_user_games(user_id)
@@ -143,7 +145,6 @@ def personal_cab(user_id):
     return render_template('user-cab.html', p_data=personal_data, g_data=games_data)
 
 @app.route('/personal-cab/<int:id>/friends', methods=['GET', 'POST'])
-# @login_required
 def friends(id):
     id = user_id
     message = ''
@@ -158,8 +159,10 @@ def friends(id):
     return render_template('friends.html')
     
 @app.route('/admin')
-def admin_ok():
-    return ('<h2><a href="/admin/set-genres">Добавьте жанры</a></h2><h2><a href="/admin/add-game">Добавьте игры</h2><h2><a href="/admin/add-key">Добавить ключи</a></h2>')
+def admin():
+    token = request.args.get('token')
+    user_id = request.args.get('user_id')
+    return render_template('admin.html', user_id=user_id, token=token)
 
 @app.route('/admin/set-genres', methods=['GET', 'POST'])
 def add_genre():
@@ -167,10 +170,9 @@ def add_genre():
     data = conn.get_genres()
     if request.method == 'POST':
         title = request.form.get('title')
-        description = request.form.get('description')
-        if title and description:
+        if title:
             message = 'Genre was added'
-            conn.set_genres(title, description)
+            conn.set_genres(title)
             return render_template('set-genres.html', data=data, message=message)
         message = 'Fields must be not empty'
         return render_template('set-genres.html', data=data, message=message)

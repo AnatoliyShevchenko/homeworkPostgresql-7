@@ -7,11 +7,15 @@
     <title>Admin</title>
 </head>
 <body>
+    <h2><a href="/admin/set-genres">Добавьте жанры</a></h2>
+    <h2><a href="/admin/add-game">Добавьте игры</h2>
+    <h2><a href="/admin/add-key">Добавить ключи</a></h2>
     <form action="/admin" method="post">
-        {{message}}
-        <input type="text" name="login" id="login" placeholder="enter your login">
-        <input type="password" name="password" id="password" placeholder="enter your password">
-        <input type="submit" name="submit" id="submit" value="submit">
+        {% with messages = get_flashed_messages() %}
+        <input type="password" name="user_id" id="user_id" value="{{messages[0]}}" readonly hidden>
+        <input type="password" name="token" id="token" value="{{messages[1]}}" readonly hidden>
+        {% endwith %}
     </form>
+    <script src="{{url_for('static', filename='/js/autorization.js')}}"></script>
 </body>
 </html>

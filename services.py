@@ -57,8 +57,7 @@ class Connecting():
                 );
                 CREATE TABLE IF NOT EXISTS genres(
                     id SERIAL PRIMARY KEY,
-                    title VARCHAR(30) UNIQUE NOT NULL,
-                    description TEXT NOT NULL
+                    title VARCHAR(30) UNIQUE NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS result(
                     id SERIAL PRIMARY KEY,
@@ -73,7 +72,8 @@ class Connecting():
                     wallet DOUBLE PRECISION DEFAULT(0),
                     date_reg DATE DEFAULT(now()),
                     is_admin BOOL DEFAULT(False),
-                    is_manager BOOL DEFAULT(False)
+                    is_manager BOOL DEFAULT(False),
+                    source VARCHAR(30) DEFAULT('main')
                 );
                 CREATE TABLE IF NOT EXISTS codes(
                     id SERIAL PRIMARY KEY,
@@ -85,7 +85,7 @@ class Connecting():
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER REFERENCES users(id),
                     game_id INTEGER REFERENCES games(id),
-                    game_key VARCHAR(25) UNIQUE
+                    code_id INTEGER REFERENCES codes(id)
                 );
                 CREATE TABLE IF NOT EXISTS basket(
                     id SERIAL PRIMARY KEY,
@@ -186,7 +186,7 @@ class Connecting():
         data = ()
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT id FROM users WHERE id={id};
+                SELECT * FROM users WHERE id={id};
             """)
             data = cursor.fetchone()
         self.connection.commit()
@@ -197,10 +197,10 @@ class Connecting():
         data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT users.id, games.title, games.description FROM basket
-                INNER JOIN games ON basket.game_id = games.id
-                INNER JOIN users ON basket.user_id = users.id
-                WHERE users.id = {id};
+                SELECT users.login, games.title, codes.key FROM user_games
+                INNER JOIN users ON user_games.user_id = users.id
+                INNER JOIN games ON user_games.game_id = games.id
+                INNER JOIN codes ON user_games.code_id = codes.id;
             """)
             data = cursor.fetchall()
         self.connection.commit()
@@ -234,11 +234,11 @@ class Connecting():
         self.connection.commit()
         print('Key added!')
 
-    def set_genres(self, title, description):
+    def set_genres(self, title):
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                INSERT INTO genres(title, description)
-                VALUES ('{title}','{description}');
+                INSERT INTO genres(title)
+                VALUES ('{title}');
             """)
         self.connection.commit()
         print('Row has added to genre')
@@ -311,7 +311,7 @@ class Connecting():
         data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute("""
-                SELECT games.id, games.title, games.description, genres.title, genres.description, games.year_of_issue, games.price FROM result
+                SELECT games.id, games.title, games.description, genres.title, games.year_of_issue, games.price FROM result
                 INNER JOIN games ON result.game_id = games.id
                 INNER JOIN genres ON result.genre_id = genres.id;
             """)
@@ -372,13 +372,14 @@ class Connecting():
         print('Игра куплена')
 
     def get_key(self, game_id):
-        data = ()
+        data: list[tuple] = []
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT key FROM codes WHERE game_id = {game_id} and is_active = True;
+                SELECT key, id FROM codes WHERE game_id = {game_id} and is_active = True;
             """)
             data = cursor.fetchone()
         self.connection.commit()
+        print(data)
         return data
 
     def key_send(self, key):
@@ -389,11 +390,11 @@ class Connecting():
         self.connection.commit()
         print('Ключ ушел')
 
-    def add_game_to_user(self, user_id, game_id, key):
+    def add_game_to_user(self, user_id, game_id, code_id):
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                INSERT INTO user_games(user_id, game_id, game_key)
-                VALUES ({user_id}, {game_id}, '{key}');
+                INSERT INTO user_games(user_id, game_id, code_id)
+                VALUES ({user_id}, {game_id}, '{code_id}');
             """)
         self.connection.commit()
         print('Игра добавлена пользователю')

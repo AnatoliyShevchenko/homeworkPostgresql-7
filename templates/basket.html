@@ -12,8 +12,10 @@
         {% for i in data %}
         <div><input type="checkbox" name="id_game" id="id_game" value="{{i[0]}}">{{i[1], i[2], i[3]}}</div>
         {% endfor %}
+        <input type="text" name="user_id" id="user_id" value="" readonly>
         <input type="submit" name="order" id="order" value="order">
     </form>
     <a href="/shop"><button>return to shop</button></a>
+    <script src="{{url_for('static', filename='/js/app.js')}}"></script>
 </body>
 </html>

@@ -9,16 +9,18 @@
 <body>
     <h1 style="color: red;">{{message}}</h1>
     <form action="/shop/{{result[0][0]}}" method="post">
-    {% for i in result %}
-    <h3>{{i[1]}}</h3>
-    <h3>{{i[2]}}</h3>
-    <h3>{{i[3]}}</h3>
-    <h3>{{i[4]}}</h3>
-    <h3>{{i[5]}}</h3>
-    {% endfor %}
-    <input type="submit" name="buy" id="buy" value="buy">
+        <input type="text" name="user_id" id="user_id" value="" readonly>
+        {% for i in result %}
+        <h3>{{i[1]}}</h3>
+        <h3>{{i[2]}}</h3>
+        <h3>{{i[3]}}</h3>
+        <h3>{{i[4]}}</h3>
+        <h3>{{i[5]}}</h3>
+        {% endfor %}
+        <input type="submit" name="buy" id="buy" value="buy">
     </form>
     <a href="/shop"><button>Return</button></a>
     <a href="/shop/basket"><button>to basket</button></a>
+    <script src="{{url_for('static', filename='/js/app.js')}}"></script>
 </body>
 </html>
