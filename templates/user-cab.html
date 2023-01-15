@@ -18,13 +18,24 @@
     <h3>{{i[1]}}</h3>
     {% endfor %}
     <br>
-    <form action="" method="post">
+    <form action="" method="post" name="art_money" id="art_money">
         <h2>Пополнить кошелек</h2>
         {{message}}
         <input type="number" id="money" name="money">
         <input type="submit" name="add_money" id="add_money" value="add">
     </form>
     <br>
-    <a href="/personal-cab/{{id}}/friends"><Button>Друзья</Button></a>
+    <h2>Друзья</h2>
+    <form action="" method="post" name="friends" id="friends">
+        <input type="text" name="add_friend" id="add_friend" placeholder="input login or email">
+        <input type="submit" name="search" id="search" value="search">
+    </form>
+    <h2>{{m_two}}</h2>
+    {% if search %}
+    <h3>Электронная почта: {{search[0]}}</h3>
+    <h3>Логин: {{search[1]}}</h3>
+    <button type="submit" value="accept">Добавить в друзья</button>
+    <button type="submit" value="decline">Нафиг этого урода</button>
+    {% endif %}
 </body>
 </html>

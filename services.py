@@ -97,13 +97,22 @@ class Connecting():
                     user_id INTEGER REFERENCES users(id),
                     token text UNIQUE NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS invite(
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    friend_id INTEGER REFERENCES users(id)
+                );
+                CREATE TABLE IF NOT EXISTS friends(
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    friend_id INTEGER REFERENCES users(id)
+                );
             """)
         self.connection.commit()
         print('Tables successfuly created!')
 
     def generate_token(self):
         token = os.urandom(512).hex()
-        print(len(token))
         return token
 
     def autorization(self, user_id, token):
@@ -200,7 +209,8 @@ class Connecting():
                 SELECT users.login, games.title, codes.key FROM user_games
                 INNER JOIN users ON user_games.user_id = users.id
                 INNER JOIN games ON user_games.game_id = games.id
-                INNER JOIN codes ON user_games.code_id = codes.id;
+                INNER JOIN codes ON user_games.code_id = codes.id
+                WHERE user_games.user_id = {id};
             """)
             data = cursor.fetchall()
         self.connection.commit()
@@ -403,7 +413,7 @@ class Connecting():
         data = ()
         with self.connection.cursor() as cursor:
             cursor.execute(f"""
-                SELECT email, login, first_name, last_name FROM users WHERE login = '{add_friend}';
+                SELECT email, login FROM users WHERE login = '{add_friend}' OR email = '{add_friend}';
             """)
             data = cursor.fetchone()
         self.connection.commit()

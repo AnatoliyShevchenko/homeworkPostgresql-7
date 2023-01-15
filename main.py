@@ -134,30 +134,26 @@ def basket():
 @app.route('/personal-cab/<int:user_id>', methods=['GET','POST'])
 def personal_cab(user_id):
     message = ''
+    message_two = ''
     personal_data = conn.get_user(user_id)
     games_data = conn.get_user_games(user_id)
     if request.method == 'POST':
         money = request.form.get('money')
-        if int(money) > 0:
-            conn.art_money(user_id, money)
-            message = 'success'
-            return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message)
+        add_friend = request.form.get('add_friend')
+        try:
+            if int(money) > 0:
+                conn.art_money(user_id, money)
+                message = 'success'
+                return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message)
+        except:
+            search = conn.search_friend(add_friend)
+            if search:
+                message_two = 'Найден пользователь'
+                return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message, m_two=message_two, search=search)
+            message_two = 'Пользователь не найден'
+            return render_template('user-cab.html', p_data=personal_data, g_data=games_data, message=message, m_two=message_two)
     return render_template('user-cab.html', p_data=personal_data, g_data=games_data)
 
-@app.route('/personal-cab/<int:id>/friends', methods=['GET', 'POST'])
-def friends(id):
-    id = user_id
-    message = ''
-    if request.method == 'POST':
-        add_friend = request.form.get('add_friend')
-        search = conn.search_friend(add_friend)
-        if search:
-            message = 'Найден пользователь'
-            return render_template('friends.html', message=message, search=search)
-        message = 'Пользователь не найден'
-        return render_template('friends.html', message=message, search=search)
-    return render_template('friends.html')
-    
 @app.route('/admin')
 def admin():
     token = request.args.get('token')
